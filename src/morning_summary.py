@@ -57,23 +57,74 @@ def _fmt_price(v: str) -> str:
         return str(v) if v else "—"
 
 
-def build_message(rows: list[dict], threshold: int, export_label: str) -> str:
-    lines = [f"<b>Утренняя сводка Ozon — {html.escape(export_label)}</b>", ""]
-    low = 0
-    if not rows:
-        lines.append("Товаров нет (кабинет пустой).")
+def _fmt_price(v: str) -> str:
+    return fmt_money(v)
+
+
+RU_MONTHS = {
+    1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+    5: "мая", 6: "июня", 7: "июля", 8: "августа",
+    9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
+}
+
+
+def ru_date(d) -> str:
+    return f"{d.day} {RU_MONTHS[d.month]} {d.year}"
+
+
+def fmt_money(v: object) -> str:
+    """1000 -> '1 000', 390.5 -> '390,5', '' -> '—'."""
+    try:
+        f = float(str(v).replace(",", "."))
+    except (ValueError, TypeError, AttributeError):
+        return str(v) if v else "—"
+    s = f"{f:,.2f}".replace(",", " ").rstrip("0").rstrip(".")
+    return s.replace(".", ",")
+
+
+def build_message(rows: list[dict], threshold: int, export_label: str = "") -> str:
+    del export_label  # заголовок — человеческая дата, а не имя файла
+    parsed: list[tuple[dict, int]] = []
     for r in rows:
-        name = html.escape(str(r.get("name", "") or "—"))
-        price = html.escape(_fmt_price(r.get("price", "")))
         try:
             stock = int(float(str(r.get("stock", 0) or 0)))
         except (ValueError, TypeError):
             stock = 0
-        is_low = stock < threshold
-        low += is_low
-        mark = " ⚠️ <b>заканчивается</b>" if is_low else ""
-        lines.append(f"• {name} — {price} ₽, остаток: {stock}{mark}")
-    lines += ["", f"Итого: {len(rows)}, заканчиваются (меньше {threshold}): {low}"]
+        parsed.append((r, stock))
+
+    out_of = [(r, s) for r, s in parsed if s <= 0]
+    low = [(r, s) for r, s in parsed if 0 < s < threshold]
+    ok = [(r, s) for r, s in parsed if s >= threshold]
+
+    lines = ["☀️ <b>Утренняя сводка Ozon</b>", f"📅 {html.escape(ru_date(date.today()))}", ""]
+    if not parsed:
+        lines.append("Товаров в кабинете пока нет — выгрузка пустая.")
+    else:
+        lines.append(f"<b>📦 Товары ({len(parsed)}):</b>")
+        for i, (r, stock) in enumerate(parsed, 1):
+            name = html.escape(str(r.get("name", "") or "—"))
+            offer = html.escape(str(r.get("offer_id", "") or "—"))
+            price = html.escape(fmt_money(r.get("price", "")))
+            if stock <= 0:
+                status = "⛔ <b>нет в наличии</b>"
+            elif stock < threshold:
+                status = "⚠️ <b>заканчивается</b>"
+            else:
+                status = "✅ в наличии"
+            lines.append(f"{i}. {name}")
+            lines.append(f"   Артикул: {offer} · Цена: {price} ₽ · Остаток: {stock} — {status}")
+        attention = out_of + low
+        if attention:
+            lines += ["", f"⚠️ <b>Требуют внимания ({len(attention)}):</b>"]
+            for r, stock in attention:
+                name = html.escape(str(r.get("name", "") or "—"))
+                reason = "закончился" if stock <= 0 else f"осталось {stock} при пороге {threshold}"
+                lines.append(f"• {name} — {reason}")
+    lines += [
+        "",
+        f"📊 Всего: {len(parsed)} · ✅ В наличии: {len(ok)}"
+        f" · ⚠️ Заканчиваются: {len(low)} · ⛔ Нет в наличии: {len(out_of)}",
+    ]
     return "\n".join(lines)
 
 
