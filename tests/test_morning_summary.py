@@ -26,6 +26,13 @@ class TestBuildMessage(unittest.TestCase):
         self.assertIn("Цена: <b>1 500 ₽</b>", msg)
         self.assertIn("Остаток: <code>37</code> шт", msg)
 
+    def test_missing_price_no_rouble_sign(self):
+        # нет цены — показываем «—», без лишнего «₽»
+        row = dict(ROW_OK, price="")
+        msg = build_message([row], threshold=5)
+        self.assertIn("Цена: <b>—</b>", msg)
+        self.assertNotIn("— ₽", msg)
+
     def test_low_stock_marked_as_ending(self):
         msg = build_message([ROW_LOW], threshold=5)
         self.assertIn("🟡 <b>1.", msg)

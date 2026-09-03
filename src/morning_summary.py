@@ -99,6 +99,7 @@ def build_message(rows: list[dict], threshold: int, export_label: str = "") -> s
             name = html.escape(str(r.get("name", "") or "—"))
             offer = html.escape(str(r.get("offer_id", "") or "—"))
             price = html.escape(fmt_money(r.get("price", "")))
+            price_line = f"{price} ₽" if price != "—" else "—"
             if stock <= 0:
                 emoji, status = "🔴", "🚫 <b>Нет в наличии</b> — нужна поставка"
             elif stock < threshold:
@@ -109,7 +110,7 @@ def build_message(rows: list[dict], threshold: int, export_label: str = "") -> s
                 "",
                 f"{emoji} <b>{i}. {name}</b>",
                 f"   🏷 Артикул: <code>{offer}</code>",
-                f"   💰 Цена: <b>{price} ₽</b>",
+                f"   💰 Цена: <b>{price_line}</b>",
                 f"   📦 Остаток: <code>{stock}</code> шт",
                 f"   {status}",
             ]
