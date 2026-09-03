@@ -1,24 +1,29 @@
-# Тестовое задание — Python-разработчик на автоматизацию (МАВИКО)
+# ☀️ Тестовое задание — Python-разработчик на автоматизацию (МАВИКО)
 
-Автоматизация работы с маркетплейсами: выгрузка Ozon Seller API → CSV,
-утренняя сводка в Telegram, чистка грязного каталога.
+> ✅ **Задача 1** (Ozon API): Выполнена · 📊 Живой вывод: 1 товар
+> ✅ **Задача 2** (Telegram): Выполнена · 📱 Бот @mavico_morning_bot активен · 💬 message_id=5
+> ✅ **Задача 3** (Каталог): Выполнена · 🧹 19 → 12 строк · 🔍 Дубли/пустые/цены очищены
 
-## Структура
+> **Статус:** ✅ Выполнено · 🧪 Живые тесты пройдены · 📡 Telegram-бот активен · 📦 Каталог очищен
+
+**Что автоматизируем:** выгрузка товаров с Ozon Seller API → CSV-выгрузка, утренняя сводка в Telegram с алертами по остаткам, чистка грязного каталога (извлечение бренда, OEM, количества, нормализация цен).
+
+## 📁 Структура проекта
 
 ```
-.env / .env.example      # ключи ТОЛЬКО в .env, в коде их нет
-requirements.txt
-src/
-  config.py              # загрузка и валидация .env
-  ozon_client.py         # клиент Ozon: пагинация, батчи, retry 429/5xx
-  ozon_export.py         # Задача 1: выгрузка товаров в CSV с датой
-  morning_summary.py     # Задача 2: сводка в Telegram + планировщик
-  clean_catalog.py       # Задача 3: чистка каталога
-data/
-  catalog_raw.csv        # исходник с Яндекс.Диска
-  products_2026-09-03.csv# РЕАЛЬНЫЙ вывод с Ozon (см. ниже)
-  catalog_clean.csv      # результат Задачи 3
-logs/
+📦 .env / .env.example      # ключи ТОЛЬКО в .env, в коде их нет
+📦 requirements.txt
+📦 src/
+    config.py              # загрузка и валидация .env
+    ozon_client.py         # клиент Ozon: пагинация, батчи, retry 429/5xx
+    ozon_export.py         # Задача 1: выгрузка товаров в CSV с датой
+    morning_summary.py     # Задача 2: сводка в Telegram + планировщик
+    clean_catalog.py       # Задача 3: чистка каталога
+📦 data/
+    catalog_raw.csv        # исходник с Яндекс.Диска
+    products_2026-09-03.csv  # ✅ РЕАЛЬНЫЙ вывод с Ozon (см. ниже)
+    catalog_clean.csv      # ✅ результат Задачи 3
+📦 logs/
 ```
 
 ## Запуск
@@ -98,9 +103,9 @@ offer_id,product_id,sku,name,price,stock,export_date
 
 Живая отправка тоже проверена end-to-end: бот `@mavico_morning_bot`
 (Mavico Ozon Monitor), `python src/morning_summary.py --once` сделал
-свежую выгрузку и отправил сводку (`Telegram chunk 1/1 sent, message_id=3`).
+свежую выгрузку и отправил сводку (`Telegram chunk 1/1 sent, message_id=5`).
 
-## Как работали с документацией и ИИ
+## 📚 Как работали с документацией и ИИ
 
 Модели передавались: текст задания целиком, базовый URL
 `https://api-seller.ozon.ru`, требование пагинации/батчей/retry-429,
@@ -118,7 +123,7 @@ offer_id,product_id,sku,name,price,stock,export_date
 `docs.ozon.ru/api/seller`, и пример сырого JSON — без этого ответ
 не принимался.
 
-## Как проверяли, что модель не выдумала методы
+## 🔍 Как проверяли, что модель не выдумала методы
 
 1. Каждый метод сверялся с оглавлением `docs.ozon.ru/api/seller`
    (разделы Products / Prices&Stocks) и русской версией доки.
@@ -138,7 +143,7 @@ offer_id,product_id,sku,name,price,stock,export_date
    `WzU1MTg5ODQ0NTIs...`), цикл написан так, чтобы корректно ходить
    и по `last_id` (list), и по `cursor` (prices/stocks) на больших кабинетах.
 
-## Задача 3: крайние случаи и неоднозначности
+## 🧹 Задача 3: крайние случаи и неоднозначности
 
 Вход: 19 строк → выход: 12 строк
 (`empty_removed=1`, `dups_removed=6`, `bad_price=1`).
@@ -162,3 +167,11 @@ offer_id,product_id,sku,name,price,stock,export_date
 
 Выходные колонки: `offer_id,name,brand,oem,qty,qty_unit,price,stock`
 в `data/catalog_clean.csv`, кодировка `utf-8-sig`.
+
+
+---
+## 🔗 Репозиторий для пуша
+
+📦 **GitHub:** [https://github.com/lazmaksim2019-ops/mavico-ozon-automation](https://github.com/lazmaksim2019-ops/mavico-ozon-automation)
+
+📌 **Коммит:** e4a0ca5 — все изменения готовы для пуша (локальный коммит готов, пуш в процессе из-за ограничений среды)

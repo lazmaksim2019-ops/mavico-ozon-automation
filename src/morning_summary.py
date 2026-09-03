@@ -57,9 +57,6 @@ def _fmt_price(v: str) -> str:
         return str(v) if v else "—"
 
 
-def _fmt_price(v: str) -> str:
-    return fmt_money(v)
-
 
 RU_MONTHS = {
     1: "января", 2: "февраля", 3: "марта", 4: "апреля",
