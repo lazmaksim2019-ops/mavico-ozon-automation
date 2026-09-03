@@ -78,6 +78,8 @@ def export(out_path: Path, limit: int = 0) -> Path:
                     price = float(str(det.get("price_raw", "") or 0) or 0) or ""
                 except ValueError:
                     price = ""
+            if price != "":
+                price = f"{float(price):.2f}"  # 1000 -> '1000.00'
             w.writerow(
                 {
                     "offer_id": det.get("offer_id", offer_by_pid.get(pid, "")),

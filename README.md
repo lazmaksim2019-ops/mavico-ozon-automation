@@ -55,7 +55,7 @@ python src/clean_catalog.py
 
 Бот создаётся с нуля: `@BotFather` → `/newbot` → токен в `.env` →
 написать боту `/start` → `python src/morning_summary.py --setup` →
-показаный `chat_id` вписать в `.env` как `TELEGRAM_CHAT_ID`.
+показанный `chat_id` вписать в `.env` как `TELEGRAM_CHAT_ID`.
 
 Планировщик «в коде»: `--schedule` — вечный цикл на `schedule`
 (ежедневно в `SUMMARY_TIME`, каждый раз делает СВЕЖУЮ выгрузку и шлёт;
@@ -80,7 +80,7 @@ $ python src/ozon_export.py
 
 ```csv
 offer_id,product_id,sku,name,price,stock,export_date
-232141,5518984452,5101262969,Полотенце,1000.0,0,2026-09-03
+232141,5518984452,5101262969,Полотенце,1000.00,0,2026-09-03
 ```
 
 Расшифровка: в кабинете 1 товар — `offer_id=232141`,
