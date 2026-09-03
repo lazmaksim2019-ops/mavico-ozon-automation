@@ -179,6 +179,8 @@ offer_id,product_id,sku,name,price,stock,export_date
 
 Выходные колонки: `offer_id,name,brand,oem,qty,qty_unit,price,stock`
 в `data/catalog_clean.csv`, кодировка `utf-8-sig`.
+Цена на выходе — всегда два знака после точки (`1500.00`, `390.50`),
+пустая ячейка если цены нет.
 
 ---
 

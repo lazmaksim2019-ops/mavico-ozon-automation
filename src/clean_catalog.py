@@ -206,6 +206,11 @@ def clean_catalog(in_path: Path, out_path: Path) -> pd.DataFrame:
 
     df["stock"] = df["stock"].apply(_fmt_stock)
 
+    # цена на выходе — всегда 2 знака после точки: '1500.00', пусто если цены нет
+    df["price"] = df["price"].apply(
+        lambda v: f"{float(v):.2f}" if pd.notna(v) else ""
+    )
+
     # column order
     df = df[["offer_id", "name", "brand", "oem", "qty", "qty_unit", "price", "stock"]]
 
