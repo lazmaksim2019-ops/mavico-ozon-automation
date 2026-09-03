@@ -13,35 +13,46 @@ ROW_OUT = {"offer_id": "WB01", "name": "Щетки стеклоочистите�
 class TestBuildMessage(unittest.TestCase):
     def test_ok_product_no_alert(self):
         msg = build_message([ROW_OK], threshold=5)
-        self.assertIn("✅ в наличии", msg)
-        self.assertNotIn("заканчивается", msg)
+        self.assertIn("🟢 <b>1. Колодки тормозные Mavico</b>", msg)
+        self.assertIn("✅ В наличии", msg)
+        self.assertNotIn("Заканчивается", msg)
         self.assertNotIn("Требуют внимания", msg)
+
+    def test_card_shows_name_price_stock(self):
+        # по каждому товару в карточке: название, артикул, цена, остаток
+        msg = build_message([ROW_OK], threshold=5)
+        self.assertIn("Колодки тормозные Mavico", msg)
+        self.assertIn("Артикул: <code>MV1028F</code>", msg)
+        self.assertIn("Цена: <b>1 500 ₽</b>", msg)
+        self.assertIn("Остаток: <code>37</code> шт", msg)
 
     def test_low_stock_marked_as_ending(self):
         msg = build_message([ROW_LOW], threshold=5)
-        self.assertIn("⚠️ <b>заканчивается</b>", msg)
-        self.assertIn("Требуют внимания (1)", msg)
-        self.assertIn("осталось 2 при пороге 5", msg)
+        self.assertIn("🟡 <b>1.", msg)
+        self.assertIn("⚠️ <b>Заканчивается</b> — осталось 2 шт (порог 5)", msg)
+        self.assertIn("Требуют внимания — 1", msg)
+        self.assertIn("заканчивается: осталось 2 шт при пороге 5", msg)
 
     def test_zero_stock_marked_out_of_stock(self):
         msg = build_message([ROW_OUT], threshold=5)
-        self.assertIn("⛔ <b>нет в наличии</b>", msg)
-        self.assertIn("Требуют внимания (1)", msg)
-        self.assertIn("закончился", msg)
+        self.assertIn("🔴 <b>1.", msg)
+        self.assertIn("🚫 <b>Нет в наличии</b> — нужна поставка", msg)
+        self.assertIn("Требуют внимания — 1", msg)
+        self.assertIn("товар закончился (остаток 0)", msg)
 
     def test_custom_threshold(self):
         # stock=4 при пороге 5 — «заканчивается», при пороге 3 — «в наличии»
         row = dict(ROW_OK, stock="4")
-        self.assertIn("заканчивается", build_message([row], threshold=5))
-        self.assertIn("✅ в наличии", build_message([row], threshold=3))
+        self.assertIn("Заканчивается", build_message([row], threshold=5))
+        self.assertIn("✅ В наличии", build_message([row], threshold=3))
 
     def test_message_contains_header_and_stats(self):
         msg = build_message([ROW_OK, ROW_LOW, ROW_OUT], threshold=5)
-        self.assertIn("Утренняя сводка Ozon", msg)
-        self.assertIn("Порог остатка: 5", msg)
-        self.assertIn("Всего: 3", msg)
-        self.assertIn("Заканчиваются: 1", msg)
-        self.assertIn("Нет в наличии: 1", msg)
+        self.assertIn("УТРЕННЯЯ СВОДКА OZON", msg)
+        self.assertIn("порог остатка: 5 шт", msg)
+        self.assertIn("<b>Итого:</b> всего 3 · в наличии 1", msg)
+        self.assertIn("заканчивается 1", msg)
+        self.assertIn("нет в наличии 1", msg)
 
     def test_empty_cabinet(self):
         msg = build_message([], threshold=5)

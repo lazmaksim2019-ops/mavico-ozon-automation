@@ -89,41 +89,48 @@ def build_message(rows: list[dict], threshold: int, export_label: str = "") -> s
     ok = [(r, s) for r, s in parsed if s >= threshold]
 
     lines = [
-        "☀️ <b>Утренняя сводка Ozon</b>",
-        f"📅 {html.escape(ru_date(date.today()))}",
-        f"📉 Порог остатка: {threshold}",
-        "",
+        "☀️ <b>УТРЕННЯЯ СВОДКА OZON</b>",
+        f"📅 {html.escape(ru_date(date.today()))} · порог остатка: {threshold} шт",
     ]
     if not parsed:
-        lines.append("Товаров в кабинете пока нет — выгрузка пустая.")
+        lines += ["", "📦 Товаров в кабинете пока нет — выгрузка пустая."]
     else:
-        lines.append(f"<b>📦 Товары ({len(parsed)}):</b>")
         for i, (r, stock) in enumerate(parsed, 1):
             name = html.escape(str(r.get("name", "") or "—"))
             offer = html.escape(str(r.get("offer_id", "") or "—"))
             price = html.escape(fmt_money(r.get("price", "")))
             if stock <= 0:
-                status = "⛔ <b>нет в наличии</b>"
+                emoji, status = "🔴", "🚫 <b>Нет в наличии</b> — нужна поставка"
             elif stock < threshold:
-                status = "⚠️ <b>заканчивается</b>"
+                emoji, status = "🟡", f"⚠️ <b>Заканчивается</b> — осталось {stock} шт (порог {threshold})"
             else:
-                status = "✅ в наличии"
-            lines.append(f"{i}. {name}")
-            lines.append(
-                f"   Артикул: <code>{offer}</code> · Цена: {price} ₽ ·"
-                f" Остаток: <code>{stock}</code> — {status}"
-            )
+                emoji, status = "🟢", "✅ В наличии"
+            lines += [
+                "",
+                f"{emoji} <b>{i}. {name}</b>",
+                f"   🏷 Артикул: <code>{offer}</code>",
+                f"   💰 Цена: <b>{price} ₽</b>",
+                f"   📦 Остаток: <code>{stock}</code> шт",
+                f"   {status}",
+            ]
         attention = out_of + low
         if attention:
-            lines += ["", f"⚠️ <b>Требуют внимания ({len(attention)}):</b>"]
+            lines += [
+                "",
+                f"🚨 <b>Требуют внимания — {len(attention)}</b>",
+            ]
             for r, stock in attention:
                 name = html.escape(str(r.get("name", "") or "—"))
-                reason = "закончился" if stock <= 0 else f"осталось {stock} при пороге {threshold}"
-                lines.append(f"• {name} — {reason}")
+                if stock <= 0:
+                    reason = "товар закончился (остаток 0)"
+                else:
+                    reason = f"заканчивается: осталось {stock} шт при пороге {threshold}"
+                lines.append(f"❗ {name} — {reason}")
     lines += [
         "",
-        f"📊 Всего: {len(parsed)} · ✅ В наличии: {len(ok)}"
-        f" · ⚠️ Заканчиваются: {len(low)} · ⛔ Нет в наличии: {len(out_of)}",
+        "—————————————",
+        f"📊 <b>Итого:</b> всего {len(parsed)} · в наличии {len(ok)}"
+        f" · заканчивается {len(low)} · нет в наличии {len(out_of)}",
     ]
     return "\n".join(lines)
 
