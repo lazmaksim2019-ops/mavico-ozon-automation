@@ -40,11 +40,6 @@ log = logging.getLogger("morning_summary")
 TG_LIMIT = 4096
 
 
-def find_latest_csv() -> Path | None:
-    files = sorted((BASE_DIR / "data").glob("products_*.csv"))
-    return files[-1] if files else None
-
-
 def read_rows(csv_path: Path) -> list[dict]:
     with open(csv_path, encoding="utf-8-sig") as f:
         return list(csv.DictReader(f))
@@ -93,7 +88,12 @@ def build_message(rows: list[dict], threshold: int, export_label: str = "") -> s
     low = [(r, s) for r, s in parsed if 0 < s < threshold]
     ok = [(r, s) for r, s in parsed if s >= threshold]
 
-    lines = ["☀️ <b>Утренняя сводка Ozon</b>", f"📅 {html.escape(ru_date(date.today()))}", ""]
+    lines = [
+        "☀️ <b>Утренняя сводка Ozon</b>",
+        f"📅 {html.escape(ru_date(date.today()))}",
+        f"📉 Порог остатка: {threshold}",
+        "",
+    ]
     if not parsed:
         lines.append("Товаров в кабинете пока нет — выгрузка пустая.")
     else:
@@ -109,7 +109,10 @@ def build_message(rows: list[dict], threshold: int, export_label: str = "") -> s
             else:
                 status = "✅ в наличии"
             lines.append(f"{i}. {name}")
-            lines.append(f"   Артикул: {offer} · Цена: {price} ₽ · Остаток: {stock} — {status}")
+            lines.append(
+                f"   Артикул: <code>{offer}</code> · Цена: {price} ₽ ·"
+                f" Остаток: <code>{stock}</code> — {status}"
+            )
         attention = out_of + low
         if attention:
             lines += ["", f"⚠️ <b>Требуют внимания ({len(attention)}):</b>"]

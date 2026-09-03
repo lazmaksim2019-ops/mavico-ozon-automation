@@ -1,7 +1,7 @@
 # ☀️ Тестовое задание — Python-разработчик на автоматизацию (МАВИКО)
 
 > ✅ **Задача 1** (Ozon API): Выполнена · 📊 Живой вывод: 1 товар
-> ✅ **Задача 2** (Telegram): Выполнена · 📱 Бот @mavico_morning_bot активен · 💬 message_id=5
+> ✅ **Задача 2** (Telegram): Выполнена · 📱 Бот @mavico_morning_bot активен · 💬 message_id=7
 > ✅ **Задача 3** (Каталог): Выполнена · 🧹 19 → 12 строк · 🔍 Дубли/пустые/цены очищены
 
 > **Статус:** ✅ Выполнено · 🧪 Живые тесты пройдены · 📡 Telegram-бот активен · 📦 Каталог очищен
@@ -11,7 +11,7 @@
 ## 📁 Структура проекта
 
 ```
-📦 .env / .env.example      # ключи ТОЛЬКО в .env, в коде их нет
+📦 .env (в git НЕ попадает) / .env.example   # ключи ТОЛЬКО в .env: не в коде и не в тестах
 📦 requirements.txt
 📦 src/
     config.py              # загрузка и валидация .env
@@ -45,6 +45,9 @@ python src/morning_summary.py --schedule
 # Узнать chat_id после /start боту:
 python src/morning_summary.py --setup
 
+# Тесты (без реальных ключей — только моки env)
+python -m unittest discover tests -v
+
 # Задача 3 — чистка каталога
 python src/clean_catalog.py
 # -> data/catalog_clean.csv
@@ -65,12 +68,12 @@ python src/clean_catalog.py
 ```
 Client-Id: 5304144 (ключ из .env, в коде не хардкодится)
 $ python src/ozon_export.py
-2026-09-03 16:43:02 INFO src.ozon_client: list page 1: +1 (total 1/1)
-2026-09-03 16:43:02 INFO ozon_export: list done: got 1 items, total=1
-2026-09-03 16:43:03 INFO src.ozon_client: info/list batch 1 -> 1 items
-2026-09-03 16:43:04 INFO src.ozon_client: prices batch 1 done
-2026-09-03 16:43:05 INFO src.ozon_client: stocks batch 1 done
-2026-09-03 16:43:05 INFO ozon_export: CSV written: data/products_2026-09-03.csv (1 rows)
+2026-09-03 18:06:49 INFO src.ozon_client: list page 1: +1 (total 1/1)
+2026-09-03 18:06:49 INFO ozon_export: list done: got 1 items, total=1
+2026-09-03 18:06:50 INFO src.ozon_client: info/list batch 1 -> 1 items
+2026-09-03 18:06:50 INFO src.ozon_client: prices batch 1 done
+2026-09-03 18:06:51 INFO src.ozon_client: stocks batch 1 done
+2026-09-03 18:06:51 INFO ozon_export: CSV written: data/products_2026-09-03.csv (1 rows)
 ```
 
 `data/products_2026-09-03.csv`:
@@ -90,6 +93,7 @@ offer_id,product_id,sku,name,price,stock,export_date
 ```
 ☀️ Утренняя сводка Ozon
 📅 3 сентября 2026
+📉 Порог остатка: 5
 
 📦 Товары (1):
 1. Полотенце
@@ -101,9 +105,11 @@ offer_id,product_id,sku,name,price,stock,export_date
 📊 Всего: 1 · ✅ В наличии: 0 · ⚠️ Заканчиваются: 0 · ⛔ Нет в наличии: 1
 ```
 
+(в Telegram артикул и остаток дополнительно выделены моноширинным `<code>`)
+
 Живая отправка тоже проверена end-to-end: бот `@mavico_morning_bot`
 (Mavico Ozon Monitor), `python src/morning_summary.py --once` сделал
-свежую выгрузку и отправил сводку (`Telegram chunk 1/1 sent, message_id=5`).
+свежую выгрузку и отправил сводку (`Telegram chunk 1/1 sent, message_id=7`).
 
 ## 📚 Как работали с документацией и ИИ
 
@@ -168,10 +174,9 @@ offer_id,product_id,sku,name,price,stock,export_date
 Выходные колонки: `offer_id,name,brand,oem,qty,qty_unit,price,stock`
 в `data/catalog_clean.csv`, кодировка `utf-8-sig`.
 
-
 ---
-## 🔗 Репозиторий для пуша
+
+## 🔗 Репозиторий
 
 📦 **GitHub:** [https://github.com/lazmaksim2019-ops/mavico-ozon-automation](https://github.com/lazmaksim2019-ops/mavico-ozon-automation)
 
-📌 **Коммит:** 70f5097 — все изменения готовы для пуша (локальный коммит готов, пуш выполнен успешно)

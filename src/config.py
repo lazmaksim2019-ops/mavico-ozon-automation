@@ -1,4 +1,4 @@
-# """Central config: loads .env, validates."""
+"""Central config: loads .env and validates required keys."""
 from __future__ import annotations
 import os
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ class Settings:
     ozon_client_id: str
     ozon_api_key: str
     ozon_base_url: str
-    low_stock_threshold: mint
+    low_stock_threshold: int
     telegram_bot_token: str
     telegram_chat_id: str
     summary_time: str
