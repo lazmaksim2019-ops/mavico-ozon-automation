@@ -1,0 +1,156 @@
+# Тестовое задание — Python-разработчик на автоматизацию (МАВИКО)
+
+Автоматизация работы с маркетплейсами: выгрузка Ozon Seller API → CSV,
+утренняя сводка в Telegram, чистка грязного каталога.
+
+## Структура
+
+```
+.env / .env.example      # ключи ТОЛЬКО в .env, в коде их нет
+requirements.txt
+src/
+  config.py              # загрузка и валидация .env
+  ozon_client.py         # клиент Ozon: пагинация, батчи, retry 429/5xx
+  ozon_export.py         # Задача 1: выгрузка товаров в CSV с датой
+  morning_summary.py     # Задача 2: сводка в Telegram + планировщик
+  clean_catalog.py       # Задача 3: чистка каталога
+data/
+  catalog_raw.csv        # исходник с Яндекс.Диска
+  products_2026-09-03.csv# РЕАЛЬНЫЙ вывод с Ozon (см. ниже)
+  catalog_clean.csv      # результат Задачи 3
+logs/
+```
+
+## Запуск
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env   # вписать OZON_*, TELEGRAM_*
+
+# Задача 1 — выгрузка Ozon
+python src/ozon_export.py
+# -> data/products_YYYY-MM-DD.csv
+
+# Задача 2 — разовая сводка (печать без отправки)
+python src/morning_summary.py --once --csv data/products_2026-09-03.csv --dry-run
+# Задача 2 — реальная отправка (нужны TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID)
+python src/morning_summary.py --once
+# Задача 2 — режим «каждое утро» (SUMMARY_TIME из .env, по умолч. 09:00)
+python src/morning_summary.py --schedule
+# Узнать chat_id после /start боту:
+python src/morning_summary.py --setup
+
+# Задача 3 — чистка каталога
+python src/clean_catalog.py
+# -> data/catalog_clean.csv
+```
+
+Бот создаётся с нуля: `@BotFather` → `/newbot` → токен в `.env` →
+написать боту `/start` → `python src/morning_summary.py --setup` →
+показаный `chat_id` вписать в `.env` как `TELEGRAM_CHAT_ID`.
+
+Планировщик «в коде»: `--schedule` — вечный цикл на `schedule`
+(ежедневно в `SUMMARY_TIME`, каждый раз делает СВЕЖУЮ выгрузку и шлёт;
+при падении выгрузки шлёт `❌ ... не удалась`). Для сервера —
+дополнительно `cron: 0 9 * * * .../venv/bin/python src/morning_summary.py --once`
+или Windows Task Scheduler, оба варианта работают поверх того же кода.
+
+## ОБЯЗАТЕЛЬНО: живой вывод с Ozon (тестовый кабинет, только чтение)
+
+```
+Client-Id: 5304144 (ключ из .env, в коде не хардкодится)
+$ python src/ozon_export.py
+2026-09-03 16:43:02 INFO src.ozon_client: list page 1: +1 (total 1/1)
+2026-09-03 16:43:02 INFO ozon_export: list done: got 1 items, total=1
+2026-09-03 16:43:03 INFO src.ozon_client: info/list batch 1 -> 1 items
+2026-09-03 16:43:04 INFO src.ozon_client: prices batch 1 done
+2026-09-03 16:43:05 INFO src.ozon_client: stocks batch 1 done
+2026-09-03 16:43:05 INFO ozon_export: CSV written: data/products_2026-09-03.csv (1 rows)
+```
+
+`data/products_2026-09-03.csv`:
+
+```csv
+offer_id,product_id,sku,name,price,stock,export_date
+232141,5518984452,5101262969,Полотенце,1000.0,0,2026-09-03
+```
+
+Расшифровка: в кабинете 1 товар — `offer_id=232141`,
+`product_id=5518984452`, `sku=5101262969`, название «Полотенце»,
+цена 1000.0 (подтверждена двумя методами: `info/list.price=1000.00`
+и `prices.marketing_seller_price=1000`), остаток 0
+(`info/list.stocks.has_stock=false`, `v4/stocks.stocks=[]`).
+Сводка (`--dry-run`, порог 5) честно помечает его «заканчивается»:
+
+```
+Утренняя сводка Ozon — products_2026-09-03.csv
+• Полотенце — 1000 ₽, остаток: 0 ⚠️ заканчивается
+Итого: 1, заканчиваются (меньше 5): 1
+```
+
+Живая отправка тоже проверена end-to-end: бот `@mavico_morning_bot`
+(Mavico Ozon Monitor), `python src/morning_summary.py --once` сделал
+свежую выгрузку и отправил сводку (`Telegram chunk 1/1 sent, message_id=2`).
+
+## Как работали с документацией и ИИ
+
+Модели передавались: текст задания целиком, базовый URL
+`https://api-seller.ozon.ru`, требование пагинации/батчей/retry-429,
+и прямые вопросы вида:
+
+- «Какой актуальный метод списка товаров Ozon Seller API v3, какие поля
+  `filter/limit/last_id`, пример curl и структура `result.items/total/last_id`?»
+- «Чем отличаются `/v3/product/info/list`, `/v5/product/info/prices`,
+  `/v4/product/info/stocks`, `/v1/analytics/stocks` — что откуда брать
+  для связки артикул/название/цена/остаток?»
+- «Формат ошибок 429/403/5xx у Ozon, есть ли заголовок Retry-After?»
+
+Формулировки строились от документации, а не от памяти модели:
+просили указывать версию метода (`v2 vs v3 vs v5`), ссылку на раздел
+`docs.ozon.ru/api/seller`, и пример сырого JSON — без этого ответ
+не принимался.
+
+## Как проверяли, что модель не выдумала методы
+
+1. Каждый метод сверялся с оглавлением `docs.ozon.ru/api/seller`
+   (разделы Products / Prices&Stocks) и русской версией доки.
+2. Проверялась актуальность версии: модель сначала предложила
+   `/v2/product/list` — живой запрос вернул `404 page not found`,
+   актуальным оказался `/v3/product/list`. Аналогично цены —
+   только `/v5/product/info/prices`, остатки — `/v4/product/info/stocks`.
+3. Каждый метод проганялся вживую тестовыми ключами read-only
+   (curl/requests) до написания основного кода: сравнивались реальные
+   поля ответа (`items/total/last_id/cursor`, `marketing_seller_price`,
+   `stocks[].present`) с тем, что claimed модель/дока.
+4. Зафиксировано расхождение: `/v1/analytics/stocks` на тестовых ключах
+   даёт `403 Api-Key is missing a required role` — значит, в коде он
+   не обязателен: остатки берём из `info/list` + `v4/stocks`, 403
+   обрабатываем как warning с остатком 0, а не как фатал.
+5. Пагинация проверена на малом кабинете (`total=1`, `last_id` вида
+   `WzU1MTg5ODQ0NTIs...`), цикл написан так, чтобы корректно ходить
+   и по `last_id` (list), и по `cursor` (prices/stocks) на больших кабинетах.
+
+## Задача 3: крайние случаи и неоднозначности
+
+Вход: 19 строк → выход: 12 строк
+(`empty_removed=1`, `dups_removed=6`, `bad_price=1`).
+Лог: `in=19 empty_removed=1 dups_removed=6 bad_price=1 out=12`.
+
+| Случай | Пример | Решение |
+|---|---|---|
+| Цена «от ...» | `от 450 руб` (CF3300) | 450.0; «от» отбрасываем, это неоднозначность «цена от» vs точная — задокументировано |
+| Тысячные пробелы + запятая | `8 990,00` → 8990.0; `12 500.00` → 12500.0; `390,5` → 390.5 | убрать `руб/rub/р`, пробелы, `,`→`.` |
+| Пустая цена при живом названии | строка «Диск ... Solaris (без цены, уточнить)» | `price=''` (NaN), строку НЕ удаляем — данные есть |
+| Дубли разным регистром/пунктуацией | MV1028F×3, MF1041×3 (`MF1041` vs `MF1041 ` с пробелом, `MF-1041` vs `MF 1041`), AF2205×2, BD5510×2 | ключ `norm_offer_id + price` (`strip+upper`, убрать `-`/пробелы); `MF-1041==MF1041`; kept first |
+| Полностью пустая строка | `,,,` | удалена |
+| Бренд не Mavico/DBA | WB01 «Щетки стеклоочистителя Деталиус ...» | fallback: первое Title-слово не из стоп-слов типов товара → `Деталиус` (а не «Щетки») |
+| OEM | `OEM 8200123456`, `OEM 2101-3502090` | приоритет `OEM <номер>`, затем `ddd-ddd`, затем 7+ цифр; короткие числа (шт/мм) OEM не считаем |
+| `к-т` = комплект | BD5510 «...к-т 2шт» | `к-т` распознаём как комплект → `2 комплект` |
+| `пара` = 2 шт | DBA4000 «...Nissan Patrol пара» | `пара` → `qty=2, шт` |
+| Размеры не путать с кол-вом | TP7788 «40*40 набор 3 шт», WB01 «600мм/400мм комплект» | `40*40`/`600мм` игнорим (нет маркера шт/компл рядом); итог `3 комплект` и `1 комплект` |
+| `набор 3 шт` | TP7788 | неоднозначно «3 шт в наборе» vs «3 набора» — принято `qty=3, комплект`, задокументировано |
+| Пустой остаток | MF1041 первая строка | `stock=''` (unknown), не 0 — отличаем «нет данных» от «нет на складе» |
+| Строка без offer_id | «Диск ... Solaris», stock=6 | kept (есть название+остаток), `offer_id=''` |
+
+Выходные колонки: `offer_id,name,brand,oem,qty,qty_unit,price,stock`
+в `data/catalog_clean.csv`, кодировка `utf-8-sig`.
