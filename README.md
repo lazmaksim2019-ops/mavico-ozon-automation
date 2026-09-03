@@ -85,7 +85,7 @@ offer_id,product_id,sku,name,price,stock,export_date
 
 Расшифровка: в кабинете 1 товар — `offer_id=232141`,
 `product_id=5518984452`, `sku=5101262969`, название «Полотенце»,
-цена 1000.0 (подтверждена двумя методами: `info/list.price=1000.00`
+цена 1000.00 (подтверждена двумя методами: `info/list.price=1000.00`
 и `prices.marketing_seller_price=1000`), остаток 0
 (`info/list.stocks.has_stock=false`, `v4/stocks.stocks=[]`).
 Сводка (порог 5) честно помечает его «нет в наличии» и выносит в блок внимания:
