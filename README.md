@@ -174,4 +174,4 @@ offer_id,product_id,sku,name,price,stock,export_date
 
 📦 **GitHub:** [https://github.com/lazmaksim2019-ops/mavico-ozon-automation](https://github.com/lazmaksim2019-ops/mavico-ozon-automation)
 
-📌 **Коммит:** e4a0ca5 — все изменения готовы для пуша (локальный коммит готов, пуш в процессе из-за ограничений среды)
+📌 **Коммит:** 70f5097 — все изменения готовы для пуша (локальный коммит готов, пуш выполнен успешно)
